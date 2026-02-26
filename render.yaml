@@ -17,7 +17,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: FRONTEND_ORIGIN
-        sync: false
+        value: https://layer-frontend.onrender.com
       - key: COOKIE_SAMESITE
         value: none
       - key: ADMIN_EMAIL
@@ -32,10 +32,10 @@ services:
     runtime: node
     rootDir: frontend
     plan: free
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_URL
-        sync: false
+        value: https://layer-backend.onrender.com
