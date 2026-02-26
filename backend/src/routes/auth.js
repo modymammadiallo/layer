@@ -5,15 +5,22 @@ import { User } from "../models/User.js";
 
 const router = express.Router();
 
+function getCookieOptions() {
+  const isProd = process.env.NODE_ENV === "production";
+  const sameSite = process.env.COOKIE_SAMESITE || (isProd ? "none" : "lax");
+  return {
+    httpOnly: true,
+    secure: isProd,
+    sameSite
+  };
+}
+
 function setAuthCookie(res, user) {
   const token = jwt.sign({ sub: user._id.toString(), role: user.role || "user" }, process.env.JWT_SECRET, {
     expiresIn: "7d"
   });
-  const isProd = process.env.NODE_ENV === "production";
   res.cookie("token", token, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: "lax",
+    ...getCookieOptions(),
     maxAge: 7 * 24 * 60 * 60 * 1000
   });
 }
@@ -51,7 +58,7 @@ router.post("/login", async (req, res) => {
 });
 
 router.post("/logout", (req, res) => {
-  res.clearCookie("token");
+  res.clearCookie("token", getCookieOptions());
   res.json({ message: "Logged out" });
 });
 

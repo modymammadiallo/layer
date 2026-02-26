@@ -31,26 +31,33 @@ Ouvrez http://localhost:3000
 
 ## Deploiement
 
-1. Backend (Render)
+### Render (backend + frontend)
 
-- Creez un service web Node.
-- Variables d'environnement: `MONGO_URI`, `JWT_SECRET`, `FRONTEND_ORIGIN`, `NODE_ENV=production`.
-- Commande de demarrage: `node src/server.js`.
+Le repo contient un blueprint `render.yaml` qui cree 2 services web:
 
-2. Frontend (Vercel)
+- `smarttasks-backend` (Express API)
+- `smarttasks-frontend` (Next.js)
 
-- Build: `next build`
-- Start: `next start`
-- Variable d'environnement: `NEXT_PUBLIC_API_URL` (URL du backend Render).
+Etapes:
 
-3. MongoDB Atlas
+1. Push du repo sur GitHub.
+2. Dans Render: New + > Blueprint > selectionnez ce repo.
+3. Dans les variables `sync: false`, renseignez:
+   - Backend: `MONGO_URI`, `FRONTEND_ORIGIN`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`
+   - Frontend: `NEXT_PUBLIC_API_URL` (URL publique du backend Render, ex: `https://smarttasks-backend.onrender.com`)
+4. Verifiez que `FRONTEND_ORIGIN` contient l'URL du frontend Render (ex: `https://smarttasks-frontend.onrender.com`).
+5. Lancez le deploy.
 
-- Creez un cluster, recuperer l'URI et le placer dans `MONGO_URI`.
+Notes:
+
+- `JWT_SECRET` est genere automatiquement par Render via `generateValue`.
+- `COOKIE_SAMESITE=none` est configure pour compatibilite cross-domain en production (HTTPS requis).
+- `ADMIN_FORCE_RESET=false` evite de reinitialiser le mot de passe admin a chaque redeploy.
 
 ## PWA
 
 - `frontend/public/manifest.json`
 - `frontend/public/sw.js`
-- Icônes dans `frontend/public/icons/`
+- Icones dans `frontend/public/icons/`
 
-Pour tester l'installation, lancez en HTTPS (Vercel ou tunnel) et utilisez le bouton "Installer l'app".
+Pour tester l'installation, lancez en HTTPS (Render) et utilisez le bouton "Installer l'app".
