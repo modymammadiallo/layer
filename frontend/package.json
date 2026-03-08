@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -p $PORT"
+    "start": "next start -p $port"
   },
   "dependencies": {
     "autoprefixer": "^10.4.20",
@@ -15,5 +15,4 @@
     "react-dom": "18.3.1",
     "tailwindcss": "^3.4.10"
   }
-
 }

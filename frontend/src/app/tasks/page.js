@@ -1,19 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { apiFetch } from "../../lib/api";
 import TaskCard from "../../components/TaskCard";
+import { t, useLang } from "../../lib/i18n";
 
 const FILTERS = ["all", "todo", "in_progress", "done"];
 
-const FILTER_LABELS = {
-  all: "Tous",
-  todo: "A faire",
-  in_progress: "En cours",
-  done: "Terminee"
-};
-
 export default function TasksPage() {
+  const lang = useLang();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -30,7 +26,7 @@ export default function TasksPage() {
         window.location.href = "/login";
         return;
       }
-      setError("Impossible de charger les taches.");
+      setError(err.message || t(lang, "tasks_load_error"));
     } finally {
       setLoading(false);
     }
@@ -38,6 +34,14 @@ export default function TasksPage() {
 
   useEffect(() => {
     loadTasks();
+  }, []);
+
+  useEffect(() => {
+    function handleSync() {
+      loadTasks();
+    }
+    window.addEventListener("app:sync", handleSync);
+    return () => window.removeEventListener("app:sync", handleSync);
   }, []);
 
   const filteredTasks = useMemo(() => {
@@ -53,21 +57,23 @@ export default function TasksPage() {
 
   return (
     <div className="space-y-6">
-      <section className="card p-6 hover-lift">
+      <section className="card p-4 sm:p-6 hover-lift">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-semibold sm:text-3xl">Gestion des taches</h2>
-            <p className="text-sm text-slate-600">{filteredTasks.length} resultat(s) sur {tasks.length} taches.</p>
+            <h2 className="text-2xl font-semibold sm:text-3xl">{t(lang, "tasks_title")}</h2>
+            <p className="text-sm text-slate-600">
+              {filteredTasks.length} {t(lang, "results_label")} {tasks.length} {t(lang, "tasks_label")}.
+            </p>
           </div>
-          <a className="btn-primary" href="/tasks/new">
-            Nouvelle tache
-          </a>
+          <Link className="btn-primary w-full sm:w-auto" href="/tasks/new">
+            {t(lang, "create_task")}
+          </Link>
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto]">
           <input
             className="rounded-xl border border-slate-200 px-4 py-3"
-            placeholder="Rechercher par titre ou description"
+            placeholder={t(lang, "search_placeholder")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -78,10 +84,10 @@ export default function TasksPage() {
                 <button
                   key={value}
                   type="button"
-                  className={active ? "btn-primary" : "btn-ghost"}
+                  className={`${active ? "btn-primary" : "btn-ghost"} text-xs sm:text-sm`}
                   onClick={() => setFilter(value)}
                 >
-                  {FILTER_LABELS[value] || value}
+                  {t(lang, `filter_${value}`)}
                 </button>
               );
             })}
@@ -90,10 +96,10 @@ export default function TasksPage() {
       </section>
 
       <section className="space-y-4">
-        {loading ? <p className="text-slate-500">Chargement...</p> : null}
+        {loading ? <p className="text-slate-500">{t(lang, "loading")}</p> : null}
         {error ? <p className="text-red-500">{error}</p> : null}
         {!loading && filteredTasks.length === 0 ? (
-          <p className="text-slate-500">Aucune tache correspondante.</p>
+          <p className="text-slate-500">{t(lang, "no_tasks_match")}</p>
         ) : null}
         <div className="grid gap-4 lg:grid-cols-2">
           {filteredTasks.map((task) => (

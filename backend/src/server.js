@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import app from "./app.js";
 import { connectDb } from "./config/db.js";
 import { ensureAdminAccount } from "./config/bootstrap-admin.js";
+import { startReminderWorker } from "./services/reminder-worker.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +16,7 @@ const port = process.env.PORT || 4000;
 connectDb()
   .then(async () => {
     await ensureAdminAccount();
+    startReminderWorker();
     app.listen(port, () => {
       console.log(`API running on http://localhost:${port}`);
     });

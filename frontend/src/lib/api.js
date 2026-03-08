@@ -41,16 +41,46 @@ export async function apiFetch(path, options = {}) {
     opts.headers["X-CSRF-Token"] = cachedCsrf;
   }
 
-  const res = await fetch(url, opts);
+  let res = await fetch(url, opts);
+
+  if (
+    res.status === 403 &&
+    opts.method &&
+    opts.method !== "GET" &&
+    !opts.__retriedCsrf
+  ) {
+    cachedCsrf = null;
+    await fetchCsrf();
+    const retryOpts = {
+      ...opts,
+      __retriedCsrf: true,
+      headers: { ...(opts.headers || {}), "X-CSRF-Token": cachedCsrf }
+    };
+    res = await fetch(url, retryOpts);
+  }
+
   if (res.status === 403 && opts.method && opts.method !== "GET") {
     cachedCsrf = null;
   }
+
   if (!res.ok) {
-    const message = await res.text();
+    let message = "";
+    const contentType = res.headers.get("content-type") || "";
+    try {
+      if (contentType.includes("application/json")) {
+        const data = await res.json();
+        message = data?.message || "";
+      } else {
+        message = await res.text();
+      }
+    } catch {
+      message = "";
+    }
     const error = new Error(message || "Request failed");
     error.status = res.status;
     throw error;
   }
+
   if (res.status === 204) return null;
   return res.json();
 }

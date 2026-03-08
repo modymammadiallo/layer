@@ -24,6 +24,74 @@ router.get("/me", async (req, res) => {
   });
 });
 
+router.post("/push-subscription", async (req, res) => {
+  const subscription = req.body?.subscription;
+  const endpoint = subscription?.endpoint;
+  const p256dh = subscription?.keys?.p256dh;
+  const auth = subscription?.keys?.auth;
+  if (!endpoint || !p256dh || !auth) {
+    return res.status(400).json({ message: "Invalid subscription payload" });
+  }
+
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return res.status(404).json({ message: "Not found" });
+  }
+
+  const normalized = {
+    endpoint,
+    expirationTime: subscription.expirationTime || null,
+    keys: { p256dh, auth }
+  };
+
+  const existingIndex = user.pushSubscriptions.findIndex(
+    (sub) => sub.endpoint === endpoint
+  );
+  if (existingIndex >= 0) {
+    user.pushSubscriptions[existingIndex] = normalized;
+  } else {
+    user.pushSubscriptions.push(normalized);
+  }
+  await user.save();
+  res.status(201).json({ ok: true });
+});
+
+router.delete("/push-subscription", async (req, res) => {
+  const endpoint = (req.body?.endpoint || "").toString().trim();
+  if (!endpoint) {
+    return res.status(400).json({ message: "Endpoint required" });
+  }
+
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return res.status(404).json({ message: "Not found" });
+  }
+  user.pushSubscriptions = user.pushSubscriptions.filter(
+    (sub) => sub.endpoint !== endpoint
+  );
+  await user.save();
+  res.json({ ok: true });
+});
+
+router.get("/directory", async (req, res) => {
+  const query = (req.query.q || "").toString().trim().toLowerCase();
+  const filter = { _id: { $ne: req.user.id } };
+  if (query) {
+    filter.email = { $regex: query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
+  }
+  const users = await User.find(filter)
+    .select("_id email avatarUrl")
+    .sort({ email: 1 })
+    .limit(25);
+  res.json({
+    users: users.map((user) => ({
+      id: user._id,
+      email: user.email,
+      avatarUrl: user.avatarUrl || ""
+    }))
+  });
+});
+
 router.put("/profile", async (req, res) => {
   const { email, avatarUrl } = req.body;
   const user = await User.findById(req.user.id);
@@ -60,9 +128,6 @@ router.put("/password", async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ message: "Missing password fields" });
-  }
-  if (newPassword.length < 8) {
-    return res.status(400).json({ message: "Password too short" });
   }
   const user = await User.findById(req.user.id);
   if (!user) {

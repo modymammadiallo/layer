@@ -14,8 +14,8 @@ function applyPreferences(preferences) {
   root.dataset.lang = language;
   root.lang = language;
 
-  const systemDark = window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const systemDark =
+    window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
   const shouldDark = theme === "dark" || (theme === "system" && systemDark);
 
   if (shouldDark) {
@@ -28,7 +28,7 @@ function applyPreferences(preferences) {
 export default function ThemeSync() {
   useEffect(() => {
     apiFetch("/api/user/me")
-      .then((data) => applyPreferences(data.user?.preferences))
+      .then((data) => applyPreferences(data?.user?.preferences))
       .catch(() => {});
   }, []);
 

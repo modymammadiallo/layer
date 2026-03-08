@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.js";
 import taskRoutes from "./routes/tasks.js";
 import userRoutes from "./routes/user.js";
 import adminRoutes from "./routes/admin.js";
+import { getVapidPublicKey, isPushConfigured } from "./services/web-push.js";
 
 const app = express();
 const isProd = process.env.NODE_ENV === "production";
@@ -35,6 +36,13 @@ const csrfProtection = csrf({
 
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
+});
+
+app.get("/api/push/public-key", (req, res) => {
+  if (!isPushConfigured()) {
+    return res.status(404).json({ message: "Push not configured" });
+  }
+  return res.json({ publicKey: getVapidPublicKey() });
 });
 
 app.use("/api/auth", csrfProtection, authRoutes);

@@ -1,70 +1,52 @@
-const CACHE_NAME = "layer-v2";
-const CORE_ASSETS = [
-  "/",
-  "/login",
-  "/register",
-  "/dashboard",
-  "/tasks",
-  "/tasks/new",
-  "/settings",
-  "/offline"
-];
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) => cache.addAll(CORE_ASSETS))
-      .then(() => self.skipWaiting())
-  );
-});
-
+self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => {
+  // Vider tous les anciens caches
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((key) => (key === CACHE_NAME ? null : caches.delete(key)))
-      )
+      Promise.all(keys.map((key) => caches.delete(key)))
     )
   );
   self.clients.claim();
 });
 
-self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") {
-    return;
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+  let payload = {};
+  try {
+    payload = event.data.json();
+  } catch {
+    payload = { title: "Rappel", body: event.data.text() };
   }
-  const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin) {
-    return;
-  }
-  if (url.pathname.startsWith("/_next/") || url.pathname.startsWith("/api/")) {
-    return;
-  }
+  const title = payload.title || "Rappel";
+  const options = {
+    body: payload.body || "",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    tag: payload.tag || undefined,
+    data: {
+      url: payload.url || "/reminders"
+    }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
 
-  if (event.request.mode === "navigate") {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(url.pathname, copy));
-          return response;
-        })
-        .catch(() => caches.match("/offline"))
-    );
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) {
-        return cached;
-      }
-      return fetch(event.request).then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        return response;
-      });
-    })
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = event.notification?.data?.url || "/reminders";
+  event.waitUntil(
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((windowClients) => {
+        for (const client of windowClients) {
+          if ("focus" in client) {
+            client.navigate(targetUrl);
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow(targetUrl);
+        }
+        return null;
+      })
   );
 });

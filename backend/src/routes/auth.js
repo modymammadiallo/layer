@@ -49,6 +49,9 @@ router.post("/login", async (req, res) => {
   if (!user) {
     return res.status(401).json({ message: "Invalid credentials" });
   }
+  if (user.suspended) {
+    return res.status(403).json({ message: "Account suspended" });
+  }
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) {
     return res.status(401).json({ message: "Invalid credentials" });
@@ -69,11 +72,14 @@ router.get("/me", async (req, res) => {
   }
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(payload.sub).select("email role");
+    const user = await User.findById(payload.sub).select("email role suspended avatarUrl");
     if (!user) {
       return res.status(200).json({ user: null });
     }
-    return res.json({ user: { id: user._id, email: user.email, role: user.role } });
+    if (user.suspended) {
+      return res.status(403).json({ message: "Account suspended" });
+    }
+    return res.json({ user: { id: user._id, email: user.email, role: user.role, avatarUrl: user.avatarUrl || "" } });
   } catch {
     return res.status(200).json({ user: null });
   }

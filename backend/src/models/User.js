@@ -15,13 +15,28 @@ const preferencesSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const pushSubscriptionSchema = new mongoose.Schema(
+  {
+    endpoint: { type: String, required: true },
+    expirationTime: { type: Number, default: null },
+    keys: {
+      p256dh: { type: String, required: true },
+      auth: { type: String, required: true }
+    }
+  },
+  { _id: false }
+);
+
 const userSchema = new mongoose.Schema(
   {
     email: { type: String, required: true, unique: true, lowercase: true },
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ["user", "admin"], default: "user" },
+    suspended: { type: Boolean, default: false },
+    suspendedAt: { type: Date, default: null },
     avatarUrl: { type: String, default: "" },
-    preferences: { type: preferencesSchema, default: () => ({}) }
+    preferences: { type: preferencesSchema, default: () => ({}) },
+    pushSubscriptions: { type: [pushSubscriptionSchema], default: [] }
   },
   { timestamps: true }
 );

@@ -4,6 +4,14 @@ export const STATUS_FR = {
   done: "Terminee"
 };
 
-export function getStatusLabel(status) {
-  return STATUS_FR[status] || status;
+export const STATUS_EN = {
+  todo: "To do",
+  in_progress: "In progress",
+  done: "Done"
+};
+
+export function getStatusLabel(status, lang) {
+  const resolved = lang || (typeof document === "undefined" ? "fr" : document.documentElement.dataset.lang || "fr");
+  const map = resolved === "en" ? STATUS_EN : STATUS_FR;
+  return map[status] || status;
 }
