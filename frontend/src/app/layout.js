@@ -15,8 +15,9 @@ export const metadata = {
   description: "Gestionnaire de taches PWA rapide et instalable",
   manifest: "/manifest.json",
   icons: {
-    apple: "/icons/icon-192.png",
-    icon: "/icons/icon-192.png"
+    icon: "/icons/icon-192.png",
+    shortcut: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png"
   }
 };
 
